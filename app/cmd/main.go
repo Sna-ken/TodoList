@@ -4,7 +4,8 @@ import (
 	"github.com/Sna-ken/hellogo/app/task"
 	"github.com/Sna-ken/hellogo/app/user"
 	"github.com/Sna-ken/hellogo/config"
-	"github.com/Sna-ken/hellogo/middeware"
+	"github.com/Sna-ken/hellogo/middleware"
+
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
@@ -24,7 +25,7 @@ func main() {
 	h.POST("/login", user.Login)
 
 	group := h.Group("/protected") //受保护路由,需要toeken登录
-	group.Use(middeware.JWTAuth())
+	group.Use(middleware.JWTAuth())
 	{
 		group.GET("/profile", user.Profile)
 		//增
