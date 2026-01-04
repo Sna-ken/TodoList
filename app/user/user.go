@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Sna-ken/hellogo/app/task"
 	"github.com/Sna-ken/hellogo/config"
 	"github.com/Sna-ken/hellogo/pkg/jwt"
 	"github.com/Sna-ken/hellogo/pkg/utils"
@@ -28,35 +29,49 @@ type UserProfile struct {
 func Register(ctx context.Context, c *app.RequestContext) {
 	var user User
 	if err := c.Bind(&user); err != nil {
-		c.JSON(consts.StatusBadRequest, "Invalid input") //无效输入
+		c.JSON(consts.StatusBadRequest, task.Response{
+			Status: consts.StatusBadRequest,
+			Msg:    "Invalid input",
+		})
 		return
 	}
 
 	hashedPassword, err := utils.HandPassword(user.Password)
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, "Error hashing password") //加密错误
+		c.JSON(consts.StatusInternalServerError, task.Response{
+			Status: consts.StatusInternalServerError,
+			Msg:    "Error hashing password",
+		})
 		return
 	}
 
 	user.Password = hashedPassword
 
 	if err := config.DB.Create(&user).Error; err != nil {
-		c.JSON(consts.StatusInternalServerError, "Error creating user") //创建失败
+		c.JSON(consts.StatusInternalServerError, task.Response{
+			Status: consts.StatusInternalServerError,
+			Msg:    "Error creating user",
+		})
 		return
 	}
 
-	c.JSON(consts.StatusOK, "User registered successfully")
+	c.JSON(consts.StatusOK, task.Response{
+		Status: consts.StatusOK,
+		Msg:    "User registered successfully",
+	})
 }
 
-func Login(ctx context.Context, c *app.RequestContext) {
-	//凭证
+func LoginLogin(ctx context.Context, c *app.RequestContext) {
 	var credentials struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
 	if err := c.Bind(&credentials); err != nil {
-		c.JSON(consts.StatusBadRequest, "Invalid input")
+		c.JSON(consts.StatusBadRequest, task.Response{
+			Status: consts.StatusBadRequest,
+			Msg:    "Invalid input",
+		})
 		return
 	}
 
@@ -64,42 +79,67 @@ func Login(ctx context.Context, c *app.RequestContext) {
 
 	if err := config.DB.Where("username = ?", credentials.Username).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(consts.StatusUnauthorized, "Invalid credentials") //未找到用户名
+			c.JSON(consts.StatusUnauthorized, task.Response{
+				Status: consts.StatusUnauthorized,
+				Msg:    "Invalid credentials",
+			})
 			return
 		}
 
-		c.JSON(consts.StatusInternalServerError, "Error querying user") //查询失败
+		c.JSON(consts.StatusInternalServerError, task.Response{
+			Status: consts.StatusInternalServerError,
+			Msg:    "Error querying user",
+		})
 		return
 	}
 
 	if !utils.CheckPasswordHash(credentials.Password, user.Password) {
-		c.JSON(consts.StatusUnauthorized, "Invalid credentials") //密码不一致
+		c.JSON(consts.StatusUnauthorized, task.Response{
+			Status: consts.StatusUnauthorized,
+			Msg:    "Invalid credentials",
+		})
 		return
 	}
 
-	token, err := jwt.GenerateJWT(user.ID) //生成JWT
+	token, err := jwt.GenerateJWT(user.ID)
 	if err != nil {
-		c.JSON(consts.StatusInternalServerError, "Error generating token") //token生成失败
+		c.JSON(consts.StatusInternalServerError, task.Response{
+			Status: consts.StatusInternalServerError,
+			Msg:    "Error generating token",
+		})
 		return
 	}
 
-	c.JSON(consts.StatusOK, map[string]string{"token": token})
+	c.JSON(consts.StatusOK, task.Response{
+		Status: consts.StatusOK,
+		Msg:    "ok",
+		Data:   map[string]string{"token": token},
+	})
 }
 
 func Profile(ctx context.Context, c *app.RequestContext) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(consts.StatusUnauthorized, "User ID not found")
+		c.JSON(consts.StatusUnauthorized, task.Response{
+			Status: consts.StatusUnauthorized,
+			Msg:    "User ID not found",
+		})
 		return
 	}
 
 	var user User
 	if err := config.DB.First(&user, userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(consts.StatusNotFound, "User not found")
+			c.JSON(consts.StatusNotFound, task.Response{
+				Status: consts.StatusNotFound,
+				Msg:    "User not found",
+			})
 			return
 		}
-		c.JSON(consts.StatusInternalServerError, "Erroe fetching user")
+		c.JSON(consts.StatusInternalServerError, task.Response{
+			Status: consts.StatusInternalServerError,
+			Msg:    "Error fetching user",
+		})
 		return
 	}
 	profile := UserProfile{
@@ -107,6 +147,10 @@ func Profile(ctx context.Context, c *app.RequestContext) {
 		Username:  user.Username,
 		CreatedAt: user.CreatedAt,
 	}
-	//这样就不会传回密码了
-	c.JSON(consts.StatusOK, profile)
+
+	c.JSON(consts.StatusOK, task.Response{
+		Status: consts.StatusOK,
+		Msg:    "ok",
+		Data:   profile,
+	})
 }
