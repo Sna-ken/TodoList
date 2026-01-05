@@ -61,7 +61,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 	})
 }
 
-func LoginLogin(ctx context.Context, c *app.RequestContext) {
+func Login(ctx context.Context, c *app.RequestContext) {
 	var credentials struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
