@@ -24,7 +24,7 @@ func main() {
 	h.POST("/register", user.Register)
 	h.POST("/login", user.Login)
 
-	group := h.Group("/protected") //需要toeken登录
+	group := h.Group("/protected")
 	group.Use(middleware.JWTAuth())
 	{
 		group.GET("/profile", user.Profile)
